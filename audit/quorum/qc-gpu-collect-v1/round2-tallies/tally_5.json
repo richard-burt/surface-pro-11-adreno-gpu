@@ -1,0 +1,22 @@
+{
+  "auditor": "5",
+  "claims": {
+    "C3": "ACCEPT",
+    "C6": "ACCEPT"
+  },
+  "findings": [
+    "C3 OK: S6 full binary copy of newest qcdx8380 package present (collect-qc-gpu-win.ps1:118-128) with size guard $MaxFullCopyMB=2000 checked at :121-125 (skip + log on exceed), newest picked via S5 DriverVer parse + Sort-Object Version -Descending (:107,:119).",
+    "C3 OK: S7 copies firmware .mbn, qcdxkmbase*.bin and qcdx8380.inf/.cat/*.ini for ALL packages in $gfxPkgs into 07-firmware per-package subdirs (:132-140); $gfxPkgs covers every qcdx8380 version (:98).",
+    "C3 OK (fix confirmed): sibling .ini registry-template collection is no longer a no-op — Get-ChildItem -Path $FileRepo -Filter $GfxSiblings -File at :141 now enumerates files, copied to 03-driver-packages-infs (:141-144).",
+    "C3 finding (minor, residual): $GfxSiblings = 'qcd*8380.inf_arm64_*' (:17) requires the literal 'd' of 'qcd'; a package family literally named 'qc8380.inf_arm64_*' would NOT match. If qc8380-family siblings exist on the target, their .ini files are missed. Worth confirming against ground truth on a real machine; does not invalidate the round-1 -File fix.",
+    "C3 finding (minor, residual): firmware .bin collection is narrowed to qcdxkmbase*.bin (:136); other *.bin blobs in a package would not reach 07-firmware (mitigated for the active package by the S6 full copy).",
+    "C3 OK: registry exports (S8 :148-175: qcdx/qcgpu service keys, display class {4d36e968}, ACPI VEN_QCOM enum, HKLM\\SOFTWARE\\Qualcomm + WOW6432Node, DriverDatabase driverdb packages), services (S9 :177-185 incl. sc.exe qc), event logs (S10 :187-204: wevtutil epl EVTX for System/Application/Kernel-PnP + 30-day QC-filtered JSON), setupapi logs (S11 :206-211), dxdiag (S12 :213-227 with completion poll), SHA256 hashes + file versions + zip (S13 :229-250) — all present.",
+    "C6 OK: [version] cast guarded at :107 (try/catch sets $ver=$null); parse failure does not void S5/S6 since Sort-Object handles $null Version and $active still selects a package.",
+    "C6 OK (fix confirmed): $pkgInfo initialized to @() at :96 before the S5 try block (:97), so S6 cannot run against $null/undefined.",
+    "C6 OK (fix confirmed): wevtutil $LASTEXITCODE checked after each epl (:193-195) with log on nonzero; no /ow anywhere; grep confirms no 2>$null anywhere in the script.",
+    "C6 OK (fix confirmed): Stop-Transcript (:243) executes before Compress-Archive (:245); the failure path retries Stop-Transcript inside a guarded try/catch with logging (:249). All catch blocks in the file are non-empty.",
+    "C6 OK: elevation detection present and non-fatal (:47-52, catch resets $isAdmin=$false, result logged).",
+    "C6 OK: no script-level param block, no CLI flags, no interactivity; settings hardcoded (:11-19): the only param() uses are function parameters (:22,:29), which respects the standalone-payload rule. Unchanged round-1 C1 facts.",
+    "C6 static evidence (auditor-side, pwsh 7.6.4): AST Parser::ParseFile reports 0 errors; Invoke-ScriptAnalyzer reports 0 findings on the audited bytes."
+  ]
+}

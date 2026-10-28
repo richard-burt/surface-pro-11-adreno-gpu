@@ -1,0 +1,24 @@
+{
+  "auditor": "2",
+  "round": 2,
+  "target": "/home/richard/Documents/projects/this-installed-ubuntu/gpu/collect-qc-gpu-win.ps1",
+  "claims": {
+    "C3": "ACCEPT",
+    "C6": "ACCEPT"
+  },
+  "findings": [
+    "INFO (C3, line 135): Copy-Item -Path '<pkg>\\*.mbn' -Recurse only matches *.mbn in the package root directory; the leaf wildcard does not extend matching into subdirectories. Firmware .mbn files inside subfolders of older packages would be missed. Mitigated for the active package by the full recursive copy in S6 (line 122).",
+    "INFO (C3, lines 17, 141): sibling-file filter 'qcd*8380.inf_arm64_*' requires the literal 'd' in 'qcd', so a literal 'qc8380.inf_arm64_*' family would not match. qcdx*/qcd<other>*8380 families are covered. Core round-1 fix (no-op -> Get-ChildItem -File) is present.",
+    "INFO (C3, line 136): .bin firmware collection is scoped to 'qcdxkmbase*.bin' prefix rather than all *.bin; consistent with the Adreno firmware naming, judged adequate.",
+    "PASS (C3): S6 full binary copy of newest qcdx8380 package with 2000 MB size guard verified (lines 117-128, $MaxFullCopyMB=2000 at line 18).",
+    "PASS (C3): S7 collects .mbn, qcdxkmbase*.bin, INF, CAT, INI per package into 07-firmware for ALL discovered packages (lines 130-140).",
+    "PASS (C3): registry exports (S8), services (S9), event logs EVTX+CSV (S10), setupapi (S11), dxdiag (S12), hashes/versions/zip (S13) all present.",
+    "PASS (C6, line 107): [version] cast inside try/catch, on failure assigns $null without aborting S5 or voiding S6.",
+    "PASS (C6, line 96): $pkgInfo initialized to @() before the S5 try block; catch path leaves it as a safe empty array for S6.",
+    "PASS (C6, lines 192-195): wevtutil $LASTEXITCODE checked and failures logged; no /ow flag; no 2>$null anywhere in the script (grep verified).",
+    "PASS (C6, lines 243-249): Stop-Transcript called before Compress-Archive; guarded Stop-Transcript retry in the S13 catch with logged message; no empty catch blocks anywhere (grep/scan verified).",
+    "PASS (C6, lines 47-52): elevation detection present, wrapped in try/catch, non-fatal, result logged.",
+    "PASS (C6): no script-level param block, no CLI switches, no Read-Host/interactivity; line 22 param is a scoped helper-function parameter, allowed; all settings hardcoded constants (C1 round-1 facts unchanged).",
+    "PASS (C6, static gate as evidence): AST parse 0 errors; Invoke-ScriptAnalyzer 0 findings; PowerShell 5.1 compatible syntax throughout."
+  ]
+}

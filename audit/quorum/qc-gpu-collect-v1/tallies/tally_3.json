@@ -1,0 +1,22 @@
+{
+  "auditor": "3",
+  "votes": {
+    "C1": "ACCEPT",
+    "C2": "ACCEPT",
+    "C3": "REJECT",
+    "C4": "ACCEPT",
+    "C5": "ACCEPT",
+    "C6": "REJECT"
+  },
+  "findings": [
+    "MAJOR (C3+C6): S7 sibling-family collection (lines 131-137) is a no-op. 'qcd*8380.inf_arm64_*' in DriverStore\\FileRepository matches DIRECTORIES (driver packages), but line 133 'Where-Object { -not $_.PSIsContainer }' excludes directories, so no adjacent-family package/INF is ever copied. Fix: filter FOR containers ('-Directory' or '-not -not $_.PSIsContainer' i.e. '$_.PSIsContainer') and copy per-package like the qcdx loop.",
+    "COVERAGE (C3): '.ini' files are never collected for non-active packages - S7 copies only *.mbn, qcdxkmbase*.bin, qcdx8380.inf, qcdx8380.cat per package (lines 126-129); INIs only land in the output via the single active-package full copy in S6. The claim/header explicitly promises 'INF/CAT/INI of ALL versions'.",
+    "COVERAGE (C3): Firmware copy is non-recursive: lines 126-127 copy '*.mbn' and 'qcdxkmbase*.bin' only from the package ROOT; .mbn/.bin nested in subfolders are missed. Also 'qcdxkmbase*' prefix may exclude other *.bin firmware.",
+    "RISK (C6): Line 97 hard-codes '-Encoding Unicode' for DriverVer parsing. If any qcdx8380.inf is ANSI/UTF-8, Select-String returns garbage, Version stays $null, and line 110 'Sort-Object Version -Descending' degenerates to an arbitrary pick -> S6 may copy a NON-newest package as 'active'. Recommend an encoding fallback or a pnputil/DriverDatabase-derived version.",
+    "RISK (C6): S13 (lines 233) Compress-Archive zips the whole $Out while transcript.log and collect.log are still open by their writers. PS 5.1 Compress-Archive fails the whole archive on a locked file; the catch retains the raw folder and logs, but the final zip can silently disappear. Consider Stop-Transcript before zipping or exclude the two logs.",
+    "MINOR (C6): wevtutil export (line 184) redirects stderr with 2>$null and reg.exe exports (lines 146/151/155/159/165) have no error capture at all; access-denied/href failures are invisible and line 167 logs 'registry exports OK' unconditionally with no per-file existence check.",
+    "MINOR (C6): Line 55 Get-CimInstance Win32_UEFIEnvironmentVariable is not a standard root\\cimv2 class on stock Windows 11 (UEFI variables live in dedicated provider namespaces); due to -ErrorAction SilentlyContinue the output is an empty/'null' JSON while S1 logs 'OK'. Low impact.",
+    "MINOR (C6): S12 (lines 205-215) fires dxdiag.exe /t without waiting and can never detect dxdiag failure (no exit-code/stderr check); worst case logs claim 'dxdiag OK (0 bytes)' after a fixed 300s wait. Acceptable but fragile.",
+    "MINOR (C2/C4): No elevation check: pnputil /enum-drivers, DriverStore copies, registry exports and System-log capture typically need admin; run non-elevated the script silently produces partial output (robustness is preserved, but a logged warning would help offline triage)."
+  ]
+}

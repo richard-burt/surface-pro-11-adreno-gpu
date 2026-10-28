@@ -1,0 +1,21 @@
+{
+  "auditor": "5",
+  "votes": {
+    "C1": "ACCEPT",
+    "C2": "ACCEPT",
+    "C3": "REJECT",
+    "C4": "ACCEPT",
+    "C5": "ACCEPT",
+    "C6": "REJECT"
+  },
+  "findings": [
+    "S7 sibling-family collection (lines 131-137) is a no-op: FileRepository package entries are directories (name pattern qcd*8380.inf_arm64_*), but `Where-Object { -not $_.PSIsContainer }` (line 133) filters OUT directories, so no adjacent-family INF/CAT is ever copied - opposite of the section comment's stated intent. (C3, C6)",
+    "Files matching *.ini and secondary INFs (e.g. qcdx8380umd.inf) are never collected explicitly anywhere; only the newest package's full copy in S6 could incidentally include them, so 'INF/CAT/INI of ALL versions' is only partially true. (C3)",
+    "Line 97 hard-codes `-Encoding Unicode` for qcdx8380.inf. If the DriverStore INF is ANSI, the DriverVer regex fails, Version becomes $null, and S6's 'newest package' selection (line 110) can pick an arbitrary package (and lose the version manifest). Encoding assumption is unverified for this exact INF. (C6)",
+    "S7 firmware copies (lines 126-127) are non-recursive: *.mbn and qcdxkmbase*.bin are only taken from each package's root, so firmware in subdirectories of older packages is missed (newest package is still fully covered by S6). (C3 minor)",
+    "Line 184 uses `/ow:$true`, which PowerShell expands to `/ow:True`; wevtutil documents lowercase true|false. If rejected, the .evtx export silently fails (stderr to $null, stdout Out-Null) and no .evtx files are produced. Unverified case-sensitivity. (C6 minor)",
+    "Line 154 filters Enum\\ACPI children on '^VEN_QCOM'; if the Adreno instance enumerates as 'QCOMxxxx' (common on ARM ACPI), the ACPI enum exports match nothing. Device-dependent, low confidence, but should likely be '^(VEN_QCOM|QCOM)'. (C3 minor)",
+    "Compress-Archive (line 233) runs while Start-Transcript still holds transcript.log open; PS 5.1 can fail with file-in-use on locked files. The catch logs it and keeps the raw folder, but the zip may be lost on every run. (C4/C6 minor)",
+    "A failed [version] cast (line 99) aborts the entire S5 try block, so package-manifest.json is lost for all packages when one INF parses badly. Caught and logged, but per-package resilience would be better. (C4/C6 minor)"
+  ]
+}

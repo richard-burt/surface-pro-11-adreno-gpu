@@ -1,0 +1,18 @@
+{
+  "auditor": "3",
+  "claims": {
+    "C3": "REJECT",
+    "C6": "ACCEPT"
+  },
+  "findings": [
+    "C3 FAIL (round-1 no-op persists): sibling .ini registry-template collection (lines 141-144) uses Get-ChildItem -File -Filter 'qcd*8380.inf_arm64_*' directly at FileRepository root. That pattern only matches names shaped like package DIRECTORY names; with -File such directories are excluded and no root-level files match, so enumeration returns nothing. The actual .ini registry-template files (named e.g. qcdx8380.ini, siblings of the INF INSIDE each package dir) can never match the filter (after '8380.' the pattern demands 'inf_arm64_'). Nothing reaches 03-driver-packages-infs from this scan. Fix needs: enumerate family directories (-Directory -Filter) then copy '*.ini' files from inside them to 03-driver-packages-infs, or use -Recurse with a '*.ini' filter.",
+    "C3: qc8380 family not covered - filter literal 'qcd' prefix ('qcd*8380...') excludes any 'qc8380.inf_arm64_*' named family required by the claim 'families qcd*/qcdx*/qc8380'.",
+    "C3 minor: .bin firmware copy narrowed to 'qcdxkmbase*.bin' (line 136); claim bullet says '.mbn/.bin' - any firmware .bin not matching that prefix in the packages is missed. (*.mbn, qcdx8380.inf, qcdx8380.cat, *.ini per-package to 07-firmware are OK, lines 132-140.)",
+    "C3 OK: S6 full binary copy of newest qcdx8380 package with $MaxFullCopyMB=2000 guard implemented (lines 118-128, constant line 18); $null versions sort last in Sort-Object -Descending so a package with a parseable DriverVer version wins.",
+    "C3 OK: registry exports (services/class/enum-acpi/Qualcomm software/DriverDatabase), services, wevtutil EVTX + QC-filtered events, setupapi logs, dxdiag, SHA256 hashes, file versions, zip all present (S8-S13).",
+    "C6 OK: [version] cast guarded by try/catch assigning $null (line 107), bad DriverVer no longer voids S5/S6; $pkgInfo initialized to @() before S5 (line 96) and re-assigned inside try, so S6 always sees an array.",
+    "C6 OK: wevtutil $LASTEXITCODE checked and non-fatally logged (lines 192-195); no /ow flag; no 2>$null stderr swallowing anywhere in the script.",
+    "C6 OK: Stop-Transcript before Compress-Archive (line 243); guarded Stop-Transcript retry in the S13 catch with its own try/catch + log (lines 248-249); no empty catch blocks (every catch logs or sets $isAdmin).",
+    "C6 OK: elevation detection present and non-fatal (lines 47-52, logs result line 52); standalone rules intact - no param block (only function-level param line 22), no CLI switches, no interactivity, settings hardcoded (lines 11-19)."
+  ]
+}

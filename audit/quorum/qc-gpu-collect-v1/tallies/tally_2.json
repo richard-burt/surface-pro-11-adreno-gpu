@@ -1,0 +1,27 @@
+{
+  "auditor": "2",
+  "votes": {
+    "C1": "ACCEPT",
+    "C2": "ACCEPT",
+    "C3": "REJECT",
+    "C4": "ACCEPT",
+    "C5": "ACCEPT",
+    "C6": "REJECT"
+  },
+  "findings": [
+    "C3/C6 (L131-137, key finding): the $GfxSiblings sibling-family collection is a silent no-op. Get-ChildItem on DriverStore\\FileRepository with -Filter 'qcd*8380.inf_arm64_*' matches the package DIRECTORIES, but the pipeline then filters with Where-Object { -not $_.PSIsContainer } (L133), excluding every directory. No sibling-package INF/CAT/INI data is ever copied, yet 'S7 firmware + INF/CAT/INI collection OK' is logged unconditionally (L138).",
+    "C3: .ini files are never collected anywhere; the only extension-specific copies are *.mbn, qcdxkmbase*.bin, qcdx8380.inf, qcdx8380.cat (L126-129). Full INI content only appears if the newest package passes the 2000 MB guard in S6; older versions contribute no INI. 'INF/CAT/INI' coverage as claimed is not met.",
+    "C3: DriverDatabase registry export filter (L162-163) matches only '^qcdx8380' prefix keys, so sibling driver package entries (e.g. other qcd*8380.inf_ package keys) are not exported.",
+    "C3: firmware (.mbn/.bin) is copied only from the top level of each qcdx8380 package (Join-Path $p.FullName '*.mbn', L126-127); blobs inside subdirectories of a package are missed. Same single-level globbing for .inf/.cat.",
+    "C6 (L55): non-existent WMI class 'Win32_UEFIEnvironmentVariable' (singular). The real class is Win32_UEFIEnvironmentVariables (plural). -ErrorAction SilentlyContinue swallows the 'invalid class' error, so the output JSON is empty/absent while S1 logs 'S1 system inventory OK'.",
+    "C6 (L110): S6 depends on $pkgInfo, which is populated inside S5's try block. If S5's catch fires mid-loop (e.g. [version] cast failure on a malformed DriverVer at L99), $pkgInfo is $null and S6 silently reports 'no active package identified' even though packages exist - cross-section variable dependency causes silent data loss rather than surfacing the S5 error.",
+    "C6 (L233): Compress-Archive in Windows PowerShell 5.1 has known failure modes for large archives (>2 GB input / archive limits, System.IO.InvalidDataException 'Stream was too long'). S6 permits up to a 2000 MB package copy plus full System/Application EVTX exports, so S13 can fail; it is caught and logs 'raw folder retained' - usable partial output survives, but the final zip is at risk on this workload.",
+    "C6/C2 (L80-85): pnputil.exe failures (e.g. /enum-devices /extended needing elevation on some builds) do not throw in PowerShell; stdout-only capture means the .txt may hold nothing while 'S4 pnputil/driverquery OK' is logged. Cosmetic-but-misleading success logs throughout: section 'OK' logs assert success on SilentlyContinue-swallowed partial data (also L25, L92, L126-129, L155).",
+    "C6 (positive check per claim): Select-String -Encoding Unicode (L97, C6 'encoding of INFs as Unicode') is CORRECT for DriverStore INFs, which are UTF-16LE; DriverVer regex date format (\\d{1,2}/\\d{1,2}/\\d{4}) and [version] cast are sound for standard DriverVer syntax; 4-segment driver versions parse fine as [version]. No defect here.",
+    "C6 (L187): Get-WinEvent -FilterHashtable with -MaxEvents 3000 returns the newest 3000 matching-then-filtered events in reverse-chronological order; with 'display|dxgkrnl' also matched there is no issue, but note the Where-Object runs client-side after MaxEvents, so older QC provider events beyond the newest 3000 System events are unreachable by design. Minor coverage note, not a logic bug.",
+    "C1 (positive): script-level param block absent; no Read-Host/-confirm/prompt; no $args / $MyInvocation bound-args reads; Write-CollectLog and Save-CimJson use function-scope param() only; all settings ($OutputRoot L11, $InfFamily L16, $GfxSiblings L17, $MaxFullCopyMB L18, $LogPath L19) hardcoded. No secret/password handling anywhere.",
+    "C2 (positive): #Requires -Version 5.1 present (L9). All cmdlets are stock PS 5.1 built-ins (Get-CimInstance, Get-WinEvent, Get-Service, Compress-Archive, Get-FileHash, Start-Transcript, Select-String); externals reg.exe/pnputil.exe/driverquery.exe/wevtutil.exe/sc.exe/dxdiag.exe all ship with Windows; -in operator (L72) is PS 3.0+; -Path parameter expansion Join-Path is 5.1-safe; no PS7-only syntax (no ternary, no ??, no -Parallel).",
+    "C5 (positive): all writes go to C:\\QC-GPU-Collect\\$Out or $OutputRoot\\*.zip (reg.exe export, wevtutil epl, dxdiag /t, Copy-Item destination, transcripts, CSV/JSON). No Invoke-WebRequest/Net.*, no registry writes (only reg.exe export and HKLM: read enumeration), none of Remove-Item/clear/reg add, no credential APIs. -Force on Copy-Item touches destination only.",
+    "C4 (positive/limitations): every section S1-S13 has its own try/catch that logs via Write-CollectLog and continues; no empty catch anywhere; transcript started (L45) and stopped (L240); a zip failure falls back to retaining the raw folder (L236). Weakness noted: -ErrorAction SilentlyContinue on data-producing cmdlets + unconditional 'OK' logs mean partial/empty collection still reports success (acceptable for a standalone collector, logged for awareness)."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "auditor": "1",
+  "claims": {
+    "C3": "REJECT",
+    "C6": "ACCEPT"
+  },
+  "findings": [
+    "C3/F1: GfxSiblings pattern 'qcd*8380.inf_arm64_*' (line 17, used at line 141) cannot match a family literally named 'qc8380' as the claim requires ('qcd*','qcdx*','qc8380'): the literal 'd' in 'qcd*8380' blocks 'qc8380.inf_arm64_*'. Direct miss on a family named in the claim.",
+    "C3/F2: Firmware .bin coverage is narrower than claimed: line 136 copies only 'qcdxkmbase*.bin', not firmware '.bin' in general; all '.mbn' are covered (line 135). If the claim's '.mbn/.bin' means the extensions, this is partial.",
+    "C3/F3 (observation): S7 sibling copy (lines 141-144) scans only the FileRepository TOP level with -File; standard FileRepository holds only package directories, so it can still yield nothing, and sibling *.ini inside package dirs are copied only to 07-firmware (line 139), never to 03-driver-packages-infs as the claim routes them. The packet prescribes 'Get-ChildItem -File' as the fix and the script matches that prescription verbatim, so I flag residual risk rather than a hard defect.",
+    "C3/F4 (minor): 'newest package' pick (lines 119-126) depends on DriverVer parsed with Select-String -Encoding Unicode (line 103); ANSI-encoded INFs would garble the regex and yield null versions, and Sort-Object -Descending over all-null versions makes the pick arbitrary rather than 'newest'. Size guard 2000 MB (lines 18, 121) is correctly implemented.",
+    "C6/F1 (minor, non-blocking): with all versions null, Sort-Object Version -Descending (line 119) picks by enumeration order, not true newest; acceptable since $null sorts last in descending and a real version always wins over null."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "auditor": "4",
+  "votes": {
+    "C1": "ACCEPT",
+    "C2": "ACCEPT",
+    "C3": "REJECT",
+    "C4": "ACCEPT",
+    "C5": "ACCEPT",
+    "C6": "REJECT"
+  },
+  "findings": [
+    "C6/C3 BUG (lines 131-137): S7 sibling-family loop uses `Where-Object { -not $_.PSIsContainer }`, which filters OUT the directories that match filter 'qcd*8380.inf_arm64_*'. DriverStore\\FileRepository contains only directories matching that pattern and no matching loose files, so adjacency-family INF/CAT collection copies nothing, silently. Likely intended `-Directory` (copy sibling package dirs) or dropping the PSIsContainer filter.",
+    "C3 GAP: INI files are never collected standalone for any version. S7 copies only *.mbn, qcdxkmbase*.bin, qcdx8380.inf, qcdx8380.cat (lines 126-129); INIs exist only incidentally inside the newest-package full copy if it is not skipped. Claim text explicitly lists 'INF/CAT/INI'.",
+    "C3 GAP: firmware copy is non-recursive (lines 126-127, wildcard paths = top level only). .mbn/.bin blobs located in subfolders of a package directory are missed.",
+    "C3 GAP: S6 newest-package full copy is silently skipped when package exceeds $MaxFullCopyMB=2000 (lines 18, 112-117); only a log line. If the Adreno package exceeds ~2 GB, the single most important artifact is not collected.",
+    "C6 RISK (line 184): `/ow:$true` expands at parse time to `/ow:True` (capital T); wevtutil documentation uses lowercase true/false. If wevtutil rejects the casing, stderr is discarded via `2>$null` and the exit code is never checked, so the .evtx is silently missing. Safer: '/ow:true' literal or check $LASTEXITCODE.",
+    "C4/C6: native-tool exit codes ($LASTEXITCODE) are never checked anywhere (pnputil, driverquery, reg.exe, sc.exe, wevtutil, dxdiag). reg.exe export failures per-key are neither caught nor logged; per-section try/catch does not see native failures.",
+    "C6 minor (line 97): `Select-String -Encoding Unicode` hard-assumes UTF-16LE INF. An ANSI-encoded INF yields no DriverVer match (Version stays $null) with no warning; sort-by-version then degrades silently.",
+    "C2/C5 minor: Win32_UEFIEnvironmentVariable and DriverStore/Class registry reads require elevation; the script never checks admin rights, so a non-admin run silently produces partial output (acceptable for read-only, but no check/log of elevation state).",
+    "C6 minor (lines 220-221): S13 hashes the live transcript.log (still open by Start-Transcript); Get-FileHash may fail on the lock and is swallowed by -ErrorAction SilentlyContinue, so checksums.csv can miss the transcript hash. checksums.csv/file-versions.csv themselves are excluded from their own checksum file by construction (files enumerated before they are written) - by design, documented here.",
+    "C3 minor (line 154): ACPI enum filter `^VEN_QCOM` may not match actual Qualcomm ACPI enumerator keys on the target (device IDs are environment-specific, e.g. 4-char IDs without the VEN_ prefix); verify against the real Enum\\ACPI tree on the hardware.",
+    "C4 minor (lines 45, 240): Start-Transcript is unguarded (errors if a transcript is already running) and Stop-Transcript is not in a finally block, so an unexpected terminating crash leaves transcription running and the transcript without a footer."
+  ]
+}

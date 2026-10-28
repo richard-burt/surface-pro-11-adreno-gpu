@@ -1,0 +1,22 @@
+{
+  "auditor": "1",
+  "votes": {
+    "C1": "ACCEPT",
+    "C2": "ACCEPT",
+    "C3": "REJECT",
+    "C4": "ACCEPT",
+    "C5": "ACCEPT",
+    "C6": "REJECT"
+  },
+  "findings": [
+    "BLOCKER (C3/C6) lines 131-137: sibling-family INF collection is a no-op. Get-ChildItem -Filter 'qcd*8380.inf_arm64_*' on FileRepository matches only directories (that is how all driver-store packages are laid out), but the pipeline filter '-not $_.PSIsContainer' excludes directories, so nothing is ever copied to 03-driver-packages-infs. Graphics-adjacent package INFs (e.g. other qcd*8380.inf families) are silently never collected despite lines 17 and 121 claiming they are.",
+    "C3: S7 copies only *.mbn, qcdxkmbase*.bin, qcdx8380.inf, qcdx8380.cat (lines 126-129) - no .ini handling. INI/firmware extras of non-active versions would only appear inside the newest-package full copy (S6); all-versions INI coverage is absent.",
+    "C6: line 99 casts [version] on the DriverVer regex group; a version with more than 4 dotted segments (Qualcomm-style e.g. 31.0.83.0.192) or non-numeric suffix throws, and since S5 uses one try/catch for the whole loop, the entire package manifest is lost and S6 skips the active-package copy. Needs per-package fault isolation or a safe parse.",
+    "C4/C6: native tool exit codes are never checked anywhere (pnputil/driverquery lines 80-85, reg.exe export lines 146-165, sc.exe line 175, wevtutil line 184); sections log 'OK' even when the tool failed, e.g. 'S8 registry exports OK' and 'S10 event logs OK' log unconditionally.",
+    "C4: no admin check/self-elevation; wevtutil epl of 'System'/'Application' (line 184) fails without elevation, stderr is suppressed with 2>$null, so the missing EVTX files are not surfaced.",
+    "C3 minor: service/registry filters '^qcdx|^qcgpu' (lines 143-144, 172) miss adjacent Qualcomm services (qcsubsys_*, qcal0com, qcbdi2, etc.) that the graphics stack depends on.",
+    "Minor: line 184 '/ow:$true' expands to '/ow:True'; docs specify true|false lowercase - probably accepted but use '/ow:true' to be safe.",
+    "Minor: PS 5.1 Out-File -Encoding UTF8 writes BOM and Export-Csv defaults to ASCII - Linux-side JSON/CSV parsing must expect utf-8(-sig)/ASCII-mangled paths; also line 220 snapshot of $files is taken before checksums.csv/file-versions.csv exist so those two manifest files are not self-hashed, and Get-FileHash may silently skip transcript.log if still open at line 221.",
+    "Minor: S12 dxdiag stability break (line 211, len == prev after 5 s with len > 0) can fire mid-write if dxdiag stalls; up to 5-minute worst case wait otherwise."
+  ]
+}
